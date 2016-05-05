@@ -47,43 +47,48 @@ else:
 	updater = Updater(token=userdata['data']['token'])
 	dispatcher = updater.dispatcher
 	def list(bot, update):
-		custom_keyboard = []
-		for account in userdata['secretkeys']:
-			custom_keyboard.append([account])
-		try:
-			print(custom_keyboard)
-			reply_markup = telegram.ReplyKeyboardMarkup(custom_keyboard)
-			bot.sendMessage(chat_id=update.message.chat_id, text="Here are your Accounts :", reply_markup=reply_markup)
-		except:
-			print("Oh Dear")
+		if userdata['data']['user']==update.message.from_user.id:
+			custom_keyboard = []
+			for account in userdata['secretkeys']:
+				custom_keyboard.append([account])
+			try:
+				print(custom_keyboard)
+				reply_markup = telegram.ReplyKeyboardMarkup(custom_keyboard)
+				bot.sendMessage(chat_id=update.message.chat_id, text="Here are your Accounts :", reply_markup=reply_markup)
+			except:
+				print("Oh Dear")
 	
 	def add(bot, update, args):
-		userdata['secretkeys'][args[0]]=args[1]
-		pickle.dump( userdata, open( "data", "wb+" ) )
+		if userdata['data']['user']==update.message.from_user.id:
+			userdata['secretkeys'][args[0]]=args[1]
+			pickle.dump( userdata, open( "data", "wb+" ) )
 		
 	def remove(bot, update, args):
-		global deleteonclick
-		deleteonclick=True;
-		bot.sendMessage(chat_id=update.message.chat_id, text="Select an Account to remove")
-		list(bot, update)
+		if userdata['data']['user']==update.message.from_user.id:
+			global deleteonclick
+			deleteonclick=True;
+			bot.sendMessage(chat_id=update.message.chat_id, text="Select an Account to remove")
+			list(bot, update)
 		
 	def handlechat(bot, update, args):
-		global deleteonclick
-		if deleteonclick:
-			try:
-				del userdata['secretkeys'][update.message.text]
-				deleteonclick=False;
-				list(bot, update)
-			except:
-				print("Key doesn't exist.")
-		else:
-			reply=otp.get_totp(userdata['secretkeys'][update.message.text])
-			bot.sendMessage(chat_id=update.message.chat_id, text=reply)
+		if userdata['data']['user']==update.message.from_user.id:
+			global deleteonclick
+			if deleteonclick:
+				try:
+					del userdata['secretkeys'][update.message.text]
+					deleteonclick=False;
+					list(bot, update)
+				except:
+					print("Key doesn't exist.")
+			else:
+				reply=otp.get_totp(userdata['secretkeys'][update.message.text])
+				bot.sendMessage(chat_id=update.message.chat_id, text=reply)
 		
 	dispatcher.addTelegramMessageHandler(handlechat)
 	dispatcher.addTelegramCommandHandler('list', list)
 	dispatcher.addTelegramCommandHandler('add', add)
 	dispatcher.addTelegramCommandHandler('remove', remove)
 	updater.start_polling()
+
 
 
